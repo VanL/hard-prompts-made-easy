@@ -1,6 +1,6 @@
 {
-    "prompt_len": 16,
-    "iter": 3000,
+    "prompt_len": 48,
+    "iter": 30000,
     "lr": 0.1,
     "weight_decay": 0.1,
     "prompt_bs": 1,
