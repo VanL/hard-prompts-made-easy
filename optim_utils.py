@@ -130,7 +130,21 @@ def initialize_prompt(tokenizer, token_embedding, args, device):
     dummy_embeds.requires_grad = False
     
     return prompt_embeds, dummy_embeds, dummy_ids
-
+  
+class bestlist():
+  def __init__(self, entries=10):
+    self._entries = entries
+    self._best = []
+  def __call__(self, score, prompt):
+    entry = (score, prompt)
+    self._best.append(entry)
+    self._best.sort(key=lambda x:x[0])
+    self._best.reverse()
+    if len(self._best) > self._entries:
+      _ = self._best.pop()
+  def best(self): return self._best
+  
+topten = bestlist()
 
 def optimize_prompt_loop(model, tokenizer, token_embedding, all_target_features, args, device):
     opt_iters = args.iter
@@ -138,7 +152,7 @@ def optimize_prompt_loop(model, tokenizer, token_embedding, all_target_features,
     weight_decay = args.weight_decay
     print_step = args.print_step
     batch_size = args.batch_size
-    print_new_best = getattr(args, 'print_new_best', False)
+    print_new_best = getattr(args, 'print_new_best', True)
 
     # initialize prompt
     prompt_embeds, dummy_embeds, dummy_ids = initialize_prompt(tokenizer, token_embedding, args, device)
@@ -199,6 +213,7 @@ def optimize_prompt_loop(model, tokenizer, token_embedding, all_target_features,
         decoded_text = decode_ids(nn_indices, tokenizer)[best_indx]
         if print_step is not None and (step % print_step == 0 or step == opt_iters-1):
             per_step_message = f"step: {step}, lr: {curr_lr}"
+            
             if not print_new_best:
                 per_step_message = f"\n{per_step_message}, cosim: {universal_cosim_score:.3f}, text: {decoded_text}"
             print(per_step_message)
@@ -206,6 +221,7 @@ def optimize_prompt_loop(model, tokenizer, token_embedding, all_target_features,
         if best_sim * args.loss_weight < universal_cosim_score * args.loss_weight:
             best_sim = universal_cosim_score
             best_text = decoded_text
+            topten(best_sim, best_text)
             if print_new_best:
                 print(f"new best cosine sim: {best_sim}")
                 print(f"new best prompt: {best_text}")
