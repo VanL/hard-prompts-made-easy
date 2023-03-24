@@ -1,5 +1,5 @@
 {
-    "prompt_len": 32,
+    "prompt_len": 64,
     "iter": 100000,
     "lr": 0.2,
     "weight_decay": 0.1,
